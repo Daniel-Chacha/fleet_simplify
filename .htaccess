@@ -1,0 +1,23 @@
+Options -Indexes
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # Block any direct access to config/ and sql/ trees.
+    RewriteRule ^config/ - [F,L]
+    RewriteRule ^sql/    - [F,L]
+</IfModule>
+
+# Hide dotfiles
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# Long cache for static assets
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css            "access plus 7 days"
+    ExpiresByType application/javascript "access plus 7 days"
+    ExpiresByType image/png           "access plus 30 days"
+    ExpiresByType image/svg+xml       "access plus 30 days"
+</IfModule>

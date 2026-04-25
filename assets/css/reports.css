@@ -1,0 +1,154 @@
+/* FleetSimplify VBMS — reports.css
+   Charts grid, tooltip, legend. */
+
+.charts-grid {
+    display: grid;
+    gap: 18px;
+    grid-template-columns: 1fr 1fr;
+}
+@media (max-width: 1100px) { .charts-grid { grid-template-columns: 1fr; } }
+
+.chart-card {
+    background: var(--white);
+    border: 1px solid var(--grey-200);
+    border-radius: var(--radius);
+    padding: 18px;
+    box-shadow: var(--shadow-sm);
+    position: relative;
+}
+.chart-card .chart-head {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+.chart-card .chart-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.chart-card h3 {
+    margin: 0 0 4px;
+    font-size: 1rem;
+    color: var(--navy);
+}
+.chart-card .chart-meta { color: var(--grey-500); font-size: .82rem; }
+.chart-card template { display: none; }
+.chart-card canvas, .chart-card svg { width: 100%; height: 280px; display: block; }
+.chart-card .empty {
+    color: var(--grey-500); text-align: center; padding: 60px 0; font-style: italic;
+}
+
+.legend {
+    margin-top: 12px;
+    display: flex; flex-wrap: wrap; gap: 6px 14px;
+    font-size: .82rem;
+    color: var(--grey-700);
+}
+.legend .swatch {
+    display: inline-block;
+    width: 12px; height: 12px;
+    border-radius: 3px;
+    margin-right: 6px;
+    vertical-align: -2px;
+}
+
+.chart-tooltip {
+    position: fixed;
+    pointer-events: none;
+    background: var(--navy);
+    color: var(--white);
+    padding: 7px 10px;
+    border-radius: 8px;
+    font-size: .82rem;
+    font-weight: 500;
+    box-shadow: 0 6px 22px rgba(0,0,0,.25);
+    transform: translate(-50%, -130%);
+    z-index: 999;
+    display: none;
+    white-space: nowrap;
+}
+.chart-tooltip.show { display: block; }
+
+/* -------- Modal-large for Details -------- */
+.modal-lg { max-width: 720px; }
+.cm-body { color: var(--grey-700); font-size: .95rem; line-height: 1.55; }
+.cm-body .insight-summary {
+    background: linear-gradient(135deg, rgba(255,107,53,.10), rgba(37,99,235,.06));
+    border: 1px solid var(--grey-200);
+    border-left: 4px solid var(--orange);
+    border-radius: 8px;
+    padding: 12px 14px;
+    color: var(--navy);
+    font-weight: 500;
+    margin-bottom: 14px;
+}
+.cm-body .insight-bullets {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.cm-body .insight-bullets li {
+    position: relative;
+    padding-left: 22px;
+    color: var(--grey-700);
+}
+.cm-body .insight-bullets li::before {
+    content: '▸';
+    position: absolute; left: 4px; top: 0;
+    color: var(--orange);
+    font-weight: 700;
+}
+.cm-body .insight-rec {
+    background: var(--success-bg);
+    color: var(--success);
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid rgba(31,157,85,.25);
+    font-weight: 500;
+}
+
+/* -------- Export progress overlay -------- */
+.export-overlay {
+    position: fixed; inset: 0;
+    background: rgba(10,22,40,.65);
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 1100;
+    backdrop-filter: blur(4px);
+}
+.export-overlay.is-open { display: flex; }
+.export-card {
+    background: var(--white);
+    border-radius: 16px;
+    padding: 28px 32px;
+    width: 100%;
+    max-width: 380px;
+    text-align: center;
+    box-shadow: 0 30px 80px rgba(0,0,0,.4);
+}
+.export-card h3 { margin: 12px 0 16px; }
+.export-spinner {
+    width: 48px; height: 48px;
+    border: 4px solid var(--grey-200);
+    border-top-color: var(--orange);
+    border-radius: 50%;
+    margin: 0 auto;
+    animation: spin .9s linear infinite;
+}
+.export-bar {
+    height: 8px;
+    background: var(--grey-200);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+.export-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--orange), var(--orange-3));
+    transition: width .25s ease;
+    border-radius: 999px;
+}
+.export-status {
+    color: var(--grey-700);
+    font-size: .88rem;
+}
