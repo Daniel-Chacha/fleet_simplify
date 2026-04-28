@@ -1,6 +1,29 @@
 /* FleetSimplify VBMS — reports.css
    Charts grid, tooltip, legend. */
 
+/* -------- Time-range selector -------- */
+.range-form {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--white);
+    padding: 8px 14px;
+    border: 1.5px solid var(--grey-200);
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    flex-shrink: 0;
+}
+.range-form label { color: var(--navy); font-size: .9rem; margin: 0; }
+.range-form select {
+    padding: 7px 12px;
+    border: 1.5px solid var(--grey-200);
+    border-radius: 8px;
+    background: var(--grey-50);
+    font: 500 .92rem 'DM Sans', sans-serif;
+    color: var(--navy);
+    cursor: pointer;
+    min-width: 160px;
+}
+.range-form select:focus { outline: none; border-color: var(--orange); }
+
 .charts-grid {
     display: grid;
     gap: 18px;

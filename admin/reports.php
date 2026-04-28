@@ -96,16 +96,39 @@ function trend_insights(array $monthly): array {
     ];
 }
 
+// ---------- Date-range filter ----------
+// Allowed ranges: 'all' (default), '7' (past 1 week), '14' (past 2 weeks),
+// '30' (past 1 month), '60' (past 2 months), '90' (past 3 months).
+$rangeOptions = [
+    'all' => ['label' => 'All time',      'days' => null],
+    '7'   => ['label' => 'Past 1 week',   'days' => 7],
+    '14'  => ['label' => 'Past 2 weeks',  'days' => 14],
+    '30'  => ['label' => 'Past 1 month',  'days' => 30],
+    '60'  => ['label' => 'Past 2 months', 'days' => 60],
+    '90'  => ['label' => 'Past 3 months', 'days' => 90],
+];
+$range = $_GET['range'] ?? 'all';
+if (!isset($rangeOptions[$range])) $range = 'all';
+$rangeDays = $rangeOptions[$range]['days'];
+
+// Build reusable WHERE / AND fragments. Cast to int to keep query-string injection safe.
+$whereDate  = $rangeDays !== null ? "WHERE created_at   >= DATE_SUB(NOW(), INTERVAL " . (int)$rangeDays . " DAY)" : "";
+$andDate    = $rangeDays !== null ?  " AND created_at   >= DATE_SUB(NOW(), INTERVAL " . (int)$rangeDays . " DAY)" : "";
+$whereDateB = $rangeDays !== null ? "WHERE b.created_at >= DATE_SUB(NOW(), INTERVAL " . (int)$rangeDays . " DAY)" : "";
+
+// Total bookings in the selected range (used in the meta strip).
+$rangeTotal = (int)$pdo->query("SELECT COUNT(*) FROM bookings $whereDate")->fetchColumn();
+
 // ---------- Datasets ----------
-$causes        = fetch_pairs($pdo, "SELECT breakdown_cause, COUNT(*) FROM bookings GROUP BY breakdown_cause ORDER BY 2 DESC");
-$locations     = fetch_pairs($pdo, "SELECT breakdown_location, COUNT(*) FROM bookings GROUP BY breakdown_location ORDER BY 2 DESC");
-$vehicleTypes  = fetch_pairs($pdo, "SELECT vehicle_type, COUNT(*) FROM bookings GROUP BY vehicle_type ORDER BY 2 DESC");
-$repairMethods = fetch_pairs($pdo, "SELECT repair_method, COUNT(*) FROM bookings WHERE repair_method IS NOT NULL AND repair_method <> '' GROUP BY repair_method ORDER BY 2 DESC");
-$severity      = fetch_pairs($pdo, "SELECT severity, COUNT(*) FROM bookings GROUP BY severity ORDER BY 2 DESC");
-$downtime      = fetch_pairs($pdo, "SELECT downtime_reason, COUNT(*) FROM bookings WHERE downtime_reason IS NOT NULL AND downtime_reason <> '' GROUP BY downtime_reason ORDER BY 2 DESC");
+$causes        = fetch_pairs($pdo, "SELECT breakdown_cause, COUNT(*) FROM bookings $whereDate GROUP BY breakdown_cause ORDER BY 2 DESC");
+$locations     = fetch_pairs($pdo, "SELECT breakdown_location, COUNT(*) FROM bookings $whereDate GROUP BY breakdown_location ORDER BY 2 DESC");
+$vehicleTypes  = fetch_pairs($pdo, "SELECT vehicle_type, COUNT(*) FROM bookings $whereDate GROUP BY vehicle_type ORDER BY 2 DESC");
+$repairMethods = fetch_pairs($pdo, "SELECT repair_method, COUNT(*) FROM bookings WHERE repair_method IS NOT NULL AND repair_method <> '' $andDate GROUP BY repair_method ORDER BY 2 DESC");
+$severity      = fetch_pairs($pdo, "SELECT severity, COUNT(*) FROM bookings $whereDate GROUP BY severity ORDER BY 2 DESC");
+$downtime      = fetch_pairs($pdo, "SELECT downtime_reason, COUNT(*) FROM bookings WHERE downtime_reason IS NOT NULL AND downtime_reason <> '' $andDate GROUP BY downtime_reason ORDER BY 2 DESC");
 
 $partsTally = [];
-foreach ($pdo->query("SELECT spare_parts_used FROM bookings WHERE spare_parts_used IS NOT NULL AND spare_parts_used <> ''") as $row) {
+foreach ($pdo->query("SELECT spare_parts_used FROM bookings WHERE spare_parts_used IS NOT NULL AND spare_parts_used <> '' $andDate") as $row) {
     foreach (explode(',', $row['spare_parts_used']) as $p) {
         $p = trim($p);
         if ($p === '') continue;
@@ -118,21 +141,27 @@ foreach ($partsTally as $k => $v) $spareParts[] = ['label' => $k, 'value' => $v]
 
 $providers = fetch_pairs($pdo, "
     SELECT m.business_name, COUNT(b.id) FROM bookings b JOIN mechanics m ON m.id = b.mechanic_id
+    $whereDateB
     GROUP BY m.id, m.business_name ORDER BY 2 DESC
 ");
 $incidentMap = ['driver_handling'=>'Driver Handling','poor_vehicle_checks'=>'Poor Vehicle Checks','road_conditions'=>'Road Conditions','other'=>'Other'];
-$incidents = fetch_pairs($pdo, "SELECT cause, COUNT(*) FROM incident_reports GROUP BY cause ORDER BY 2 DESC");
+$incidents = fetch_pairs($pdo, "SELECT cause, COUNT(*) FROM incident_reports $whereDate GROUP BY cause ORDER BY 2 DESC");
 foreach ($incidents as &$it) { $it['label'] = $incidentMap[$it['label']] ?? $it['label']; } unset($it);
 
+// Monthly trend — when "All time" is chosen, show the current calendar year.
+// When a date-range filter is active, it doesn't make sense to also force YEAR(CURDATE()),
+// so we just respect the date filter (the bar chart will simply collapse to the months that
+// fall inside the window — honest representation of the filtered view).
 $months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 $monthlyMap = array_fill(1, 12, 0);
-foreach ($pdo->query("SELECT MONTH(created_at) AS m, COUNT(*) AS c FROM bookings WHERE YEAR(created_at) = YEAR(CURDATE()) GROUP BY m") as $row) {
-    $monthlyMap[(int)$row['m']] = (int)$row['c'];
-}
+$monthlySql = $rangeDays === null
+    ? "SELECT MONTH(created_at) AS m, COUNT(*) AS c FROM bookings WHERE YEAR(created_at) = YEAR(CURDATE()) GROUP BY m"
+    : "SELECT MONTH(created_at) AS m, COUNT(*) AS c FROM bookings $whereDate GROUP BY m";
+foreach ($pdo->query($monthlySql) as $row) $monthlyMap[(int)$row['m']] = (int)$row['c'];
 $monthly = [];
 for ($i = 1; $i <= 12; $i++) $monthly[] = ['label' => $months[$i-1], 'value' => $monthlyMap[$i]];
 
-$topVehicles = fetch_pairs($pdo, "SELECT vehicle_plate, COUNT(*) FROM bookings GROUP BY vehicle_plate ORDER BY 2 DESC LIMIT 15");
+$topVehicles = fetch_pairs($pdo, "SELECT vehicle_plate, COUNT(*) FROM bookings $whereDate GROUP BY vehicle_plate ORDER BY 2 DESC LIMIT 15");
 
 // ---------- Chart definitions: diverse types + per-chart insights ----------
 $charts = [
@@ -249,8 +278,22 @@ include __DIR__ . '/../partials/header.php';
         <?php include __DIR__ . '/../partials/topbar.php'; ?>
         <div class="content">
             <div class="page-h">
-                <h2 style="margin:0">Breakdown analytics</h2>
-                <small class="text-muted">Live data — click <strong>Details</strong> on any chart for insights, or <strong>Export</strong> to download a PNG report.</small>
+                <div>
+                    <h2 style="margin:0">Breakdown analytics</h2>
+                    <small class="text-muted">
+                        Showing <strong><?= e($rangeOptions[$range]['label']) ?></strong> &middot;
+                        <strong><?= (int)$rangeTotal ?></strong> bookings in this window &middot;
+                        click <strong>Details</strong> on any chart for insights, or <strong>Export</strong> for a PNG report.
+                    </small>
+                </div>
+                <form method="get" id="range-form" class="range-form">
+                    <label for="range-select"><strong>Time range:</strong></label>
+                    <select name="range" id="range-select" onchange="document.getElementById('range-form').submit()">
+                        <?php foreach ($rangeOptions as $k => $opt): ?>
+                            <option value="<?= e($k) ?>" <?= $k === $range ? 'selected' : '' ?>><?= e($opt['label']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </form>
             </div>
 
             <div class="charts-grid">

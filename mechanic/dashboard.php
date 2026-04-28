@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/init.php';
+require_once __DIR__ . '/../config/push.php';
 require_role('mechanic');
 $u = current_user();
 $pdo = db();
@@ -65,6 +66,24 @@ include __DIR__ . '/../partials/header.php';
                     <div class="stat-card s2"><div class="stat-icon">P</div><div><div class="stat-val"><?= (int)($k['prog_cnt'] ?? 0) ?></div><div class="stat-label">In progress</div></div></div>
                     <div class="stat-card s3"><div class="stat-icon">C</div><div><div class="stat-val"><?= (int)($k['done_cnt'] ?? 0) ?></div><div class="stat-label">Completed</div></div></div>
                     <div class="stat-card s4"><div class="stat-icon">★</div><div><div class="stat-val"><?= e((string)$avg) ?></div><div class="stat-label">Avg rating</div></div></div>
+                </div>
+            </section>
+
+            <section class="push-card mb-16">
+                <div class="push-card-h">
+                    <div>
+                        <h3>Browser notifications</h3>
+                        <p id="push-status" class="push-status push-status-idle">Click to receive booking alerts even when this tab is closed.</p>
+                    </div>
+                    <button id="push-toggle"
+                            class="btn"
+                            type="button"
+                            data-public-key="<?= e(FS_VAPID_PUBLIC) ?>"
+                            data-subscribe-url="<?= e(url('api/push-subscribe.php')) ?>"
+                            data-unsubscribe-url="<?= e(url('api/push-unsubscribe.php')) ?>"
+                            data-csrf="<?= e(csrf_token()) ?>">
+                        🔔 Enable notifications
+                    </button>
                 </div>
             </section>
 
@@ -137,7 +156,7 @@ if ($me['status'] === 'approved') {
     ];
     $inline_js = 'window.__notif = ' . json_encode($notifCfg) . ';'
                . 'document.addEventListener("DOMContentLoaded", function () { window.fsMechanicMap(' . json_encode($mapCfg) . '); });';
-    $extra_js = ['assets/js/notifications.js', 'assets/js/gps-tracking.js'];
+    $extra_js = ['assets/js/notifications.js', 'assets/js/gps-tracking.js', 'assets/js/push.js'];
 }
 ?>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>

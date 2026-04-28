@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/init.php';
+require_once __DIR__ . '/../config/push.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     json_response(['ok' => false, 'error' => 'POST only.'], 405);
@@ -57,6 +58,18 @@ try {
                 ':c'=>$cause, ':l'=>$loc, ':sev'=>$sev, ':amt'=>$amt, ':lat'=>$lat, ':lng'=>$lng
             ]);
             $bid = (int)$pdo->lastInsertId();
+
+            // Background push to the mechanic's registered devices.
+            // notify_mechanic returns silently if no subscriptions exist, so this
+            // is safe even before the mechanic has clicked "Enable notifications".
+            $driverName = current_user()['name'] ?? 'A driver';
+            notify_mechanic($mid, [
+                'title' => 'New booking — ' . $bn,
+                'body'  => $driverName . ' needs help: ' . $cause . ' (' . $sev . ', ' . $loc . ')',
+                'url'   => url('mechanic/chat.php?booking_id=' . $bid),
+                'tag'   => 'fs-booking-' . $bid,
+            ]);
+
             flash('success', 'Request sent. The mechanic has been notified.');
             redirect('user/chat.php?booking_id=' . $bid);
         }
@@ -94,6 +107,20 @@ try {
             $mid = (int)($_POST['mechanic_id'] ?? 0);
             $st = $pdo->prepare('UPDATE bookings SET mechanic_id = :m WHERE id = :id');
             $st->execute([':m' => $mid, ':id' => $bid]);
+
+            // Look up the booking number + cause so the push has useful content.
+            $info = $pdo->prepare('SELECT booking_number, breakdown_cause, severity, breakdown_location FROM bookings WHERE id = :id');
+            $info->execute([':id' => $bid]);
+            $b = $info->fetch();
+            if ($b) {
+                notify_mechanic($mid, [
+                    'title' => 'Booking assigned to you — ' . $b['booking_number'],
+                    'body'  => $b['breakdown_cause'] . ' (' . $b['severity'] . ', ' . $b['breakdown_location'] . ')',
+                    'url'   => url('mechanic/chat.php?booking_id=' . $bid),
+                    'tag'   => 'fs-booking-' . $bid,
+                ]);
+            }
+
             reply_ok($is_ajax, 'admin/bookings.php', 'Mechanic assigned.');
         }
 

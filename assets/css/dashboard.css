@@ -339,6 +339,24 @@ a.stat-card:hover::after { color: var(--orange); transform: translateX(3px); }
 .svc-pills .pill button:hover { background: rgba(255,255,255,.45); }
 .svc-pills .pill-empty { color: var(--grey-500); font-style: italic; font-size: .85rem; }
 
+/* -------- Push-notification toggle card -------- */
+.push-card {
+    background: linear-gradient(135deg, rgba(255,107,53,.06), rgba(37,99,235,.05));
+    border: 1px solid var(--grey-200);
+    border-left: 4px solid var(--orange);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    box-shadow: var(--shadow-sm);
+}
+.push-card-h {
+    display: flex; gap: 16px; align-items: center; justify-content: space-between;
+    flex-wrap: wrap;
+}
+.push-card h3 { margin: 0 0 4px; font-size: 1rem; }
+.push-status { margin: 0; font-size: .88rem; color: var(--grey-700); }
+.push-status-on   { color: var(--success); font-weight: 500; }
+.push-status-warn { color: var(--danger); }
+
 /* -------- Approval-pending overlay -------- */
 .pending-screen {
     background: var(--white);

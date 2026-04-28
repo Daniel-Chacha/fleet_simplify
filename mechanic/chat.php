@@ -21,9 +21,17 @@ $st->execute([':b' => $bid]);
 $messages = $st->fetchAll();
 $last_id = $messages ? (int)end($messages)['id'] : 0;
 
+// Mechanic's last known location (for the map). Falls back to Nairobi CBD if none on file.
+$st = $pdo->prepare('SELECT latitude, longitude FROM locations WHERE mechanic_id = :m');
+$st->execute([':m' => $u['uid']]);
+$mechLoc = $st->fetch();
+$mechLat = $mechLoc ? (float)$mechLoc['latitude']  : -1.2921;
+$mechLng = $mechLoc ? (float)$mechLoc['longitude'] : 36.8219;
+
 $page_title = 'Chat — ' . $booking['booking_number'];
 include __DIR__ . '/../partials/header.php';
 ?>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <div class="app">
     <?php include __DIR__ . '/../partials/sidebar-mechanic.php'; ?>
     <main class="main">
@@ -53,6 +61,23 @@ include __DIR__ . '/../partials/header.php';
                 · <strong>Severity:</strong> <?= e($booking['severity']) ?>
             </div>
 
+            <?php if ($booking['driver_lat'] && $booking['driver_lng']): ?>
+            <div class="gps-panel">
+                <div class="f-between mb-8">
+                    <strong>Driver location — <?= e($booking['user_name']) ?></strong>
+                    <span class="flex gap-8" style="align-items:center">
+                        <span id="eta-pill" class="eta-pill">Computing ETA…</span>
+                        <button id="loc-btn" type="button" class="btn btn-sm btn-outline">Update my location</button>
+                    </span>
+                </div>
+                <div id="track-map" class="gps-map"></div>
+            </div>
+            <?php else: ?>
+            <div class="card mb-16 text-muted">
+                Driver did not share GPS coordinates with this booking — map unavailable.
+            </div>
+            <?php endif; ?>
+
             <div class="chat-shell">
                 <div class="chat-h"><div><h3>Conversation</h3><small>with <?= e($booking['user_name']) ?></small></div></div>
                 <div class="chat-body" id="chat-body">
@@ -80,7 +105,26 @@ $cfg = [
     'role'      => 'mechanic',
     'lastId'    => $last_id,
 ];
-$inline_js = 'window.__chat = ' . json_encode($cfg) . ';';
-$extra_js = ['assets/js/chat.js'];
-include __DIR__ . '/../partials/footer.php';
+$cfgJson = json_encode($cfg);
+
+$track_js = '';
+if ($booking['driver_lat'] && $booking['driver_lng']) {
+    $track_cfg = [
+        'elId'      => 'track-map',
+        'driverLat' => (float)$booking['driver_lat'],
+        'driverLng' => (float)$booking['driver_lng'],
+        'mechLat'   => $mechLat,
+        'mechLng'   => $mechLng,
+        'btnId'     => 'loc-btn',
+        'etaId'     => 'eta-pill',
+        'updateUrl' => url('api/update-location.php'),
+        'csrf'      => csrf_token(),
+    ];
+    $track_js = 'document.addEventListener("DOMContentLoaded", function () { window.fsTrackDriver(' . json_encode($track_cfg) . '); });';
+}
+
+$inline_js = "window.__chat = $cfgJson; $track_js";
+$extra_js = ['assets/js/chat.js', 'assets/js/gps-tracking.js'];
 ?>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<?php include __DIR__ . '/../partials/footer.php'; ?>
