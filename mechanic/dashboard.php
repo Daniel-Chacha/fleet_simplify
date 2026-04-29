@@ -75,17 +75,96 @@ include __DIR__ . '/../partials/header.php';
                         <h3>Browser notifications</h3>
                         <p id="push-status" class="push-status push-status-idle">Click to receive booking alerts even when this tab is closed.</p>
                     </div>
-                    <button id="push-toggle"
-                            class="btn"
-                            type="button"
-                            data-public-key="<?= e(FS_VAPID_PUBLIC) ?>"
-                            data-subscribe-url="<?= e(url('api/push-subscribe.php')) ?>"
-                            data-unsubscribe-url="<?= e(url('api/push-unsubscribe.php')) ?>"
-                            data-csrf="<?= e(csrf_token()) ?>">
-                        🔔 Enable notifications
-                    </button>
+                    <div class="flex gap-8" style="align-items:center">
+                        <button class="btn btn-outline btn-sm" type="button" onclick="openModal('push-info')" title="How browser notifications work">
+                            ⓘ How it works
+                        </button>
+                        <button id="push-toggle"
+                                class="btn"
+                                type="button"
+                                data-public-key="<?= e(FS_VAPID_PUBLIC) ?>"
+                                data-subscribe-url="<?= e(url('api/push-subscribe.php')) ?>"
+                                data-unsubscribe-url="<?= e(url('api/push-unsubscribe.php')) ?>"
+                                data-sw-url="<?= e(url('sw.js')) ?>"
+                                data-sw-scope="<?= e(rtrim(base_url(), '/') . '/') ?>"
+                                data-csrf="<?= e(csrf_token()) ?>">
+                            🔔 Enable notifications
+                        </button>
+                    </div>
                 </div>
             </section>
+
+            <!-- ===== How browser notifications work ===== -->
+            <div class="modal-backdrop" id="push-info">
+                <div class="modal modal-lg">
+                    <div class="modal-h">
+                        <h3>How browser notifications work</h3>
+                        <button class="modal-x" data-modal-close>&times;</button>
+                    </div>
+                    <div class="push-info">
+                        <div class="push-info-step">
+                            <div class="push-info-num">1</div>
+                            <div>
+                                <h4>Activate them on this page</h4>
+                                <p>On the <strong>Mechanic Dashboard</strong>, find the <strong>"Browser notifications"</strong> card at the top and click the orange <strong>🔔 Enable notifications</strong> button. Your browser will pop up a permission prompt — click <strong>"Allow"</strong>.</p>
+                                <p class="text-muted">You only need to do this once per device/browser. If you sign in from a second device (e.g. your phone), you'll need to enable it there as well.</p>
+                            </div>
+                        </div>
+
+                        <div class="push-info-step">
+                            <div class="push-info-num">2</div>
+                            <div>
+                                <h4>What happens behind the scenes</h4>
+                                <p>FleetSimplify registers a tiny background service with your browser. The dashboard <strong>does not need to be open</strong> — your operating system itself will wake the browser when a new request arrives.</p>
+                            </div>
+                        </div>
+
+                        <div class="push-info-step">
+                            <div class="push-info-num">3</div>
+                            <div>
+                                <h4>What a notification looks like</h4>
+                                <div class="push-mock">
+                                    <div class="push-mock-icon">FS</div>
+                                    <div class="push-mock-body">
+                                        <div class="push-mock-title">New booking — BK-2025-0031</div>
+                                        <div class="push-mock-text">James Kariuki needs help: Engine Failure (Major, Highway)</div>
+                                        <div class="push-mock-meta">FleetSimplify · just now</div>
+                                    </div>
+                                </div>
+                                <p class="text-muted mt-8">It pops up as a banner at the corner of your screen with a sound (and a short vibration on phones). Tapping it opens that booking's chat directly.</p>
+                            </div>
+                        </div>
+
+                        <div class="push-info-step">
+                            <div class="push-info-num">4</div>
+                            <div>
+                                <h4>You'll be alerted in three places</h4>
+                                <ul class="push-info-list">
+                                    <li><strong>System notification</strong> — works even with the tab closed (the new feature you're enabling here).</li>
+                                    <li><strong>Bell icon</strong> at the top right of the dashboard — shows an unread count if you're logged in but on a different page.</li>
+                                    <li><strong>Audible beep + on-screen card</strong> in the dashboard's "Incoming requests" panel when the dashboard tab is open.</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="push-info-step">
+                            <div class="push-info-num">5</div>
+                            <div>
+                                <h4>Turning them off</h4>
+                                <p>Click the same toggle (it now reads <strong>🔕 Disable notifications</strong>) and they stop instantly. You can also revoke permission at any time from your browser's site settings (the lock icon in the address bar).</p>
+                            </div>
+                        </div>
+
+                        <div class="push-info-note">
+                            <strong>Browser support:</strong> Chrome, Firefox, Edge, Opera, Brave, Samsung Internet on desktop and Android. iOS Safari requires the site to be installed to your Home Screen first (iOS 16.4+).
+                            <br><strong>Privacy:</strong> Notification content is end-to-end encrypted between FleetSimplify and your browser — Google/Mozilla relay it but cannot read it.
+                        </div>
+                    </div>
+                    <div class="text-right mt-16">
+                        <button class="btn" data-modal-close>Got it</button>
+                    </div>
+                </div>
+            </div>
 
             <div class="find-grid">
                 <div>

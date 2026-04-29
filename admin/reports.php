@@ -289,8 +289,8 @@ include __DIR__ . '/../partials/header.php';
                 <form method="get" id="range-form" class="range-form">
                     <label for="range-select"><strong>Time range:</strong></label>
                     <select name="range" id="range-select" onchange="document.getElementById('range-form').submit()">
-                        <?php foreach ($rangeOptions as $k => $opt): ?>
-                            <option value="<?= e($k) ?>" <?= $k === $range ? 'selected' : '' ?>><?= e($opt['label']) ?></option>
+                        <?php foreach ($rangeOptions as $k => $opt): $kStr = (string)$k; ?>
+                            <option value="<?= e($kStr) ?>" <?= $kStr === $range ? 'selected' : '' ?>><?= e($opt['label']) ?></option>
                         <?php endforeach; ?>
                     </select>
                 </form>

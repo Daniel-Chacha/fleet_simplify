@@ -24,6 +24,11 @@
     var subscribeUrl   = btn.dataset.subscribeUrl;
     var unsubscribeUrl = btn.dataset.unsubscribeUrl;
     var csrf           = btn.dataset.csrf;
+    // Server-supplied path to /sw.js (handles the project being mounted under
+    // /fleet_simplify/ on shared hosts like XAMPP). The SW's scope is the
+    // directory it lives in, which is fine — it covers every page in the app.
+    var swUrl          = btn.dataset.swUrl   || '/sw.js';
+    var swScope        = btn.dataset.swScope || swUrl.replace(/sw\.js$/, '');
 
     function setStatus(label, kind) {
         if (statusEl) {
@@ -80,24 +85,16 @@
 
     async function init() {
         try {
-            var reg = await navigator.serviceWorker.register('/sw.js');
-            // SW path needs to resolve from site root — if the app is mounted at /fleet_simplify/,
-            // adjust the register path. We try the site-root first, then fall back.
+            // The SW URL comes from PHP (data-sw-url), so it resolves correctly
+            // whether the app is at the site root or mounted under /fleet_simplify/.
+            var reg = await navigator.serviceWorker.register(swUrl, { scope: swScope });
             try { await navigator.serviceWorker.ready; } catch (_) {}
             var sub = await reg.pushManager.getSubscription();
             refreshUI(sub);
         } catch (err) {
-            // Fallback: register relative to the script origin.
-            try {
-                var reg2 = await navigator.serviceWorker.register('sw.js');
-                await navigator.serviceWorker.ready;
-                var sub2 = await reg2.pushManager.getSubscription();
-                refreshUI(sub2);
-            } catch (err2) {
-                btn.disabled = true;
-                btn.textContent = 'Service worker error';
-                setStatus('Could not register the service worker (' + (err2.message || err.message) + '). HTTPS is required except on localhost.', 'warn');
-            }
+            btn.disabled = true;
+            btn.textContent = 'Service worker error';
+            setStatus('Could not register the service worker (' + err.message + '). On non-localhost hosts, HTTPS is required.', 'warn');
         }
     }
 
